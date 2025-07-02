@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, Outlet } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Calculator, FileText, Settings, TrendingUp, Building2, Droplets, Brain } from "lucide-react";
 import {
@@ -20,22 +20,22 @@ import {
 const navigationItems = [
   {
     title: "Dashboard",
-    url: createPageUrl("Dashboard"),
+    url: "/app",
     icon: TrendingUp,
   },
   {
     title: "New Estimate",
-    url: createPageUrl("NewEstimate"),
+    url: "/app/new",
     icon: Calculator,
   },
   {
     title: "All Estimates",
-    url: createPageUrl("Estimates"),
+    url: "/app/estimates",
     icon: FileText,
   },
   {
     title: "Waterproofing Expert",
-    url: createPageUrl("WaterproofingExpert"),
+    url: "/app/expert",
     icon: Brain,
   },
 ];
@@ -128,7 +128,7 @@ export default function Layout({ children, currentPageName }) {
           </header>
 
           <div className="flex-1 overflow-auto">
-            {children}
+            <Outlet />
           </div>
         </main>
       </div>

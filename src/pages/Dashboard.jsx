@@ -44,7 +44,7 @@ export default function Dashboard() {
             <h1 className="text-4xl font-bold text-slate-900 mb-2">Welcome Back</h1>
             <p className="text-lg text-slate-600">Ready to create your next waterproofing estimate?</p>
           </div>
-          <Link to={createPageUrl("NewEstimate")}>
+          <Link to="/app/new">
             <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200">
               <Plus className="w-5 h-5 mr-2" />
               New Estimate

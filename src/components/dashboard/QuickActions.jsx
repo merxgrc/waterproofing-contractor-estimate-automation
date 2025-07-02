@@ -31,7 +31,7 @@ export default function QuickActions() {
         </CardHeader>
         <CardContent className="space-y-4">
           {actions.map((action, index) => (
-            <Link key={index} to={action.href}>
+            <Link key={index} to={`/app/${action.href}`}>
               <Button className={`w-full justify-start h-auto p-4 ${action.color} text-white`}>
                 <action.icon className="w-5 h-5 mr-3" />
                 <div className="text-left">

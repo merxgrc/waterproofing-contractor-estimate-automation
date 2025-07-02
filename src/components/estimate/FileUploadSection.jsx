@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, FileText, Image, CheckCircle, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from '../../supabaseClient';
 
 export default function FileUploadSection({ onFilesUploaded }) {
   const [blueprintFile, setBlueprintFile] = useState(null);
@@ -40,6 +41,14 @@ export default function FileUploadSection({ onFilesUploaded }) {
     setPhotoFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const uploadToSupabase = async (bucket, file) => {
+    const filePath = `${Date.now()}_${file.name}`;
+    const { error: uploadError } = await supabase.storage.from(bucket).upload(filePath, file);
+    if (uploadError) throw uploadError;
+    const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+    return data.publicUrl;
+  };
+
   const handleContinue = async () => {
     if (!blueprintFile) {
       setError('Please upload a blueprint or site plan');
@@ -53,15 +62,15 @@ export default function FileUploadSection({ onFilesUploaded }) {
       const uploadedFiles = {};
 
       // Upload blueprint
-      const blueprintResult = await UploadFile({ file: blueprintFile });
-      uploadedFiles.blueprint = blueprintResult.file_url;
+      const blueprintUrl = await uploadToSupabase('blueprints', blueprintFile);
+      uploadedFiles.blueprint = blueprintUrl;
 
       // Upload photos
       if (photoFiles.length > 0) {
         const photoUrls = [];
         for (const photo of photoFiles) {
-          const photoResult = await UploadFile({ file: photo });
-          photoUrls.push(photoResult.file_url);
+          const url = await uploadToSupabase('photos', photo);
+          photoUrls.push(url);
         }
         uploadedFiles.photos = photoUrls;
       }

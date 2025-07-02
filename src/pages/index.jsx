@@ -1,69 +1,58 @@
-import Layout from "./Layout.jsx";
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from '../context/AuthContext';
+import LoginPage from './LoginPage';
+import Dashboard from './Dashboard';
+import Estimates from './Estimates';
+import NewEstimate from './NewEstimate';
+import WaterproofingExpert from './WaterproofingExpert';
+import Layout from './Layout';
 
-import Dashboard from "./Dashboard";
-
-import NewEstimate from "./NewEstimate";
-
-import Estimates from "./Estimates";
-
-import WaterproofingExpert from "./WaterproofingExpert";
-
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
-
-const PAGES = {
-    
-    Dashboard: Dashboard,
-    
-    NewEstimate: NewEstimate,
-    
-    Estimates: Estimates,
-    
-    WaterproofingExpert: WaterproofingExpert,
-    
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div>Loading...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
 }
 
-function _getCurrentPage(url) {
-    if (url.endsWith('/')) {
-        url = url.slice(0, -1);
-    }
-    let urlLastPart = url.split('/').pop();
-    if (urlLastPart.includes('?')) {
-        urlLastPart = urlLastPart.split('?')[0];
-    }
-
-    const pageName = Object.keys(PAGES).find(page => page.toLowerCase() === urlLastPart.toLowerCase());
-    return pageName || Object.keys(PAGES)[0];
-}
-
-// Create a wrapper component that uses useLocation inside the Router context
-function PagesContent() {
-    const location = useLocation();
-    const currentPage = _getCurrentPage(location.pathname);
-    
-    return (
-        <Layout currentPageName={currentPage}>
-            <Routes>            
-                
-                    <Route path="/" element={<Dashboard />} />
-                
-                
-                <Route path="/Dashboard" element={<Dashboard />} />
-                
-                <Route path="/NewEstimate" element={<NewEstimate />} />
-                
-                <Route path="/Estimates" element={<Estimates />} />
-                
-                <Route path="/WaterproofingExpert" element={<WaterproofingExpert />} />
-                
-            </Routes>
-        </Layout>
-    );
+function HomePage() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+      <div className="max-w-xl w-full bg-white rounded-lg shadow-lg p-8 text-center">
+        <h1 className="text-4xl font-bold text-slate-900 mb-4">Welcome to AquaEstimate</h1>
+        <p className="text-lg text-slate-600 mb-8">Professional Commercial Waterproofing Estimates, powered by Supabase.</p>
+        <button
+          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold rounded shadow"
+          onClick={() => navigate('/login')}
+        >
+          Get Started
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function Pages() {
-    return (
-        <Router>
-            <PagesContent />
-        </Router>
-    );
+  return (
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/app" element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Dashboard />} />
+            <Route path="estimates" element={<Estimates />} />
+            <Route path="new" element={<NewEstimate />} />
+            <Route path="expert" element={<WaterproofingExpert />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
+  );
 }
