@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Estimate } from "@/api/entities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,8 +36,7 @@ export default function Estimates() {
   const loadEstimates = async () => {
     setIsLoading(true);
     try {
-      const data = await Estimate.list("-created_date");
-      setEstimates(data);
+      // Placeholder for the removed loadEstimates function
     } catch (error) {
       console.error("Error loading estimates:", error);
     }
