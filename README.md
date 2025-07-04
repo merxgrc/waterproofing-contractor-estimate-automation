@@ -1,4 +1,4 @@
-# Style Synch
+# aqua estimate
 
 This app is a Vite+React project, ready for Supabase and Vercel integration.
 
