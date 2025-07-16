@@ -1,3 +1,4 @@
+// src/components/chatbot/api.js
 export async function fetchOpenAIChat(messages) {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   const response = await fetch('https://api.openai.com/v1/chat/completions', {

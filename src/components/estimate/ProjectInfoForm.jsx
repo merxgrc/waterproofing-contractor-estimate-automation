@@ -24,6 +24,28 @@ export default function ProjectInfoForm({ onSubmit }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validate required fields
+    const requiredFields = ['project_name', 'client_name', 'project_type', 'building_type', 'waterproofing_material', 'access_conditions', 'zip_code', 'labor_rate', 'urgency_level'];
+    const missingFields = requiredFields.filter(field => !formData[field]);
+    
+    if (missingFields.length > 0) {
+      alert(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      return;
+    }
+    
+    // Validate zip code format
+    if (!/^\d{5}$/.test(formData.zip_code)) {
+      alert('Please enter a valid 5-digit zip code');
+      return;
+    }
+    
+    // Validate labor rate
+    if (formData.labor_rate <= 0) {
+      alert('Labor rate must be greater than 0');
+      return;
+    }
+    
     onSubmit(formData);
   };
 

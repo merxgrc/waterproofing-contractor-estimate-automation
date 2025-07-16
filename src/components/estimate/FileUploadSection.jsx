@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// src/components/estimate/FileUploadSection.jsx
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, FileText, Image, CheckCircle, X } from "lucide-react";
@@ -10,6 +11,10 @@ export default function FileUploadSection({ onFilesUploaded }) {
   const [photoFiles, setPhotoFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Add refs for file inputs
+  const blueprintInputRef = useRef(null);
+  const photoInputRef = useRef(null);
 
   const handleBlueprintUpload = async (e) => {
     const file = e.target.files[0];
@@ -43,8 +48,18 @@ export default function FileUploadSection({ onFilesUploaded }) {
 
   const uploadToSupabase = async (bucket, file) => {
     const filePath = `${Date.now()}_${file.name}`;
+    
+    // Check file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      throw new Error(`File ${file.name} is too large. Maximum size is 50MB.`);
+    }
+    
     const { error: uploadError } = await supabase.storage.from(bucket).upload(filePath, file);
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      console.error('Supabase upload error:', uploadError);
+      throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`);
+    }
+    
     const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
     return data.publicUrl;
   };
@@ -59,6 +74,11 @@ export default function FileUploadSection({ onFilesUploaded }) {
     setError(null);
 
     try {
+      // Check if Supabase is configured
+      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        throw new Error("Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.");
+      }
+
       const uploadedFiles = {};
 
       // Upload blueprint
@@ -78,7 +98,7 @@ export default function FileUploadSection({ onFilesUploaded }) {
       onFilesUploaded(uploadedFiles);
       
     } catch (error) {
-      setError('Error uploading files. Please try again.');
+      setError(`Error uploading files: ${error.message}`);
       console.error('Upload error:', error);
     }
 
@@ -94,6 +114,35 @@ export default function FileUploadSection({ onFilesUploaded }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* --- TEST BLOCK 1: Plain Label/Input File Upload --- */}
+        <div style={{ marginBottom: 24 }}>
+          <input
+            type="file"
+            id="test-upload"
+            style={{ display: "none" }}
+            onChange={e => alert("File selected!")}
+          />
+          <label htmlFor="test-upload" style={{ cursor: "pointer", padding: 8, border: "1px solid #ccc", borderRadius: 4, display: "inline-block" }}>
+            Test Plain File Upload
+          </label>
+        </div>
+        {/* --- TEST BLOCK 2: Direct Trigger Button File Upload --- */}
+        <div style={{ marginBottom: 24 }}>
+          <input
+            type="file"
+            ref={input => window._testInput = input}
+            style={{ display: "none" }}
+            onChange={e => alert("File selected!")}
+            id="direct-upload"
+          />
+          <button
+            type="button"
+            onClick={() => window._testInput && window._testInput.click()}
+            style={{ padding: "8px 16px", border: "1px solid #ccc", borderRadius: "4px" }}
+          >
+            Direct Trigger Upload
+          </button>
+        </div>
         
         {error && (
           <Alert variant="destructive">
@@ -123,14 +172,17 @@ export default function FileUploadSection({ onFilesUploaded }) {
                   type="file"
                   accept=".pdf,.png,.jpg,.jpeg"
                   onChange={handleBlueprintUpload}
-                  className="hidden"
-                  id="blueprint-upload"
+                  style={{ display: "none" }}
+                  ref={blueprintInputRef}
                 />
-                <label htmlFor="blueprint-upload">
-                  <Button variant="outline" className="cursor-pointer">
-                    Choose File
-                  </Button>
-                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="cursor-pointer"
+                  onClick={() => blueprintInputRef.current && blueprintInputRef.current.click()}
+                >
+                  Choose File
+                </Button>
               </div>
             )}
           </div>
@@ -148,14 +200,17 @@ export default function FileUploadSection({ onFilesUploaded }) {
               accept="image/*"
               multiple
               onChange={handlePhotoUpload}
-              className="hidden"
-              id="photo-upload"
+              style={{ display: "none" }}
+              ref={photoInputRef}
             />
-            <label htmlFor="photo-upload">
-              <Button variant="outline" className="cursor-pointer">
-                Choose Photos
-              </Button>
-            </label>
+            <Button
+              type="button"
+              variant="outline"
+              className="cursor-pointer"
+              onClick={() => photoInputRef.current && photoInputRef.current.click()}
+            >
+              Choose Photos
+            </Button>
           </div>
 
           {photoFiles.length > 0 && (
