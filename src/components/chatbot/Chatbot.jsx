@@ -1,3 +1,4 @@
+// src/components/chatbot/Chatbot.jsx
 import React, { useState } from 'react';
 import ChatMessage from './ChatMessage';
 import { fetchOpenAIChat } from './api';

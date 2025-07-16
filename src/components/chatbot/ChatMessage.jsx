@@ -1,3 +1,4 @@
+// src/components/chatbot/ChatMessage.jsx
 import React from 'react';
 import { Droplets, User, Loader2 } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
