@@ -7,7 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Calculator, DollarSign, Save, Edit3 } from "lucide-react";
 
-export default function EstimateBreakdown({ projectData, estimateData, analysisResults, onSave }) {
+export default function EstimateBreakdown({ 
+  projectData, 
+  estimateData, 
+  analysisResults, 
+  manualEntries = [], 
+  totals = { manualTotal: 0, aiTotal: 0, grandTotal: 0 }, 
+  onSave 
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(estimateData);
   const [notes, setNotes] = useState('');

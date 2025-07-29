@@ -23,6 +23,15 @@ if (isDevelopment && hasApiKey) {
 }
 
 export async function InvokeLLM({ prompt, projectDescription, imageUrl }) {
+  // Debug logging
+  console.log("🔧 LLM Debug:", {
+    hasClient: !!client,
+    hasPrompt: !!prompt,
+    hasProjectDescription: !!projectDescription,
+    hasImageUrl: !!imageUrl,
+    imageUrl: imageUrl
+  });
+
   // If no client available, use mock data for demo purposes
   if (!client) {
     console.warn("OpenAI client not available. Using mock analysis data.");
@@ -62,7 +71,15 @@ export async function InvokeLLM({ prompt, projectDescription, imageUrl }) {
           "special_considerations": array of strings,
           "challenges": array of strings,
           "equipment_needed": array of strings,
-          "recommendations": array of strings
+          "recommendations": array of strings,
+          "ai_analysis_subtotal": number (total cost for labor, equipment, overhead),
+          "materials": array of objects with structure {
+            "name": string (specific material name),
+            "quantity": number (numeric quantity needed),
+            "unit": string (unit of measurement like "square feet", "gallons", "rolls"),
+            "unit_price": number (current market price per unit),
+            "total_price": number (quantity * unit_price)
+          }
         }`
       });
       
@@ -74,13 +91,21 @@ export async function InvokeLLM({ prompt, projectDescription, imageUrl }) {
           ${projectDescription}
 
           Analyze the project details and any uploaded image/blueprint and return a JSON response 
-          with the required fields for waterproofing estimation.
+          with the required fields for waterproofing estimation, including:
+          
+          1. A detailed materials list with realistic quantities, units, and current market prices
+          2. Each material must include: name, quantity, unit, unit_price, and total_price
+          3. Use specific material names (e.g., "Modified Bitumen Membrane", "EPDM Primer")
+          4. Provide accurate unit prices based on current market rates for waterproofing materials
+          5. Calculate total_price = quantity * unit_price for each material
+          6. Include ai_analysis_subtotal covering labor, equipment, overhead (excluding materials)
           `
         }
       ];
 
       // Add image if provided
       if (imageUrl) {
+        console.log("📸 Adding image to AI analysis:", imageUrl);
         userContent.push({
           type: "image_url",
           image_url: {
@@ -88,6 +113,8 @@ export async function InvokeLLM({ prompt, projectDescription, imageUrl }) {
             detail: "high"
           }
         });
+      } else {
+        console.log("📷 No image provided for analysis");
       }
 
       messages.push({
@@ -114,6 +141,30 @@ export async function InvokeLLM({ prompt, projectDescription, imageUrl }) {
     // For structured calls, parse JSON and normalize
     const parsed = JSON.parse(content);
 
+    // Ensure materials have all required fields and calculate missing unit_price
+    const materials = (parsed.materials || []).map(material => {
+      let unit_price = material.unit_price;
+      let total_price = material.total_price;
+      
+      // If unit_price is missing but total_price exists, calculate unit_price
+      if (!unit_price && total_price && material.quantity) {
+        unit_price = total_price / material.quantity;
+      }
+      
+      // If total_price is missing, calculate it
+      if (!total_price && unit_price && material.quantity) {
+        total_price = unit_price * material.quantity;
+      }
+      
+      return {
+        name: material.name || "Unknown Material",
+        quantity: parseFloat(material.quantity) || 1,
+        unit: material.unit || "units",
+        unit_price: parseFloat(unit_price) || 0,
+        total_price: parseFloat(total_price) || 0
+      };
+    });
+
     return {
       estimated_area: parsed.estimated_area || parsed.area_sq_ft || 1000,
       complexity_score: parsed.complexity_score || 5,
@@ -121,7 +172,9 @@ export async function InvokeLLM({ prompt, projectDescription, imageUrl }) {
       special_considerations: parsed.special_considerations || ["Standard waterproofing project"],
       challenges: parsed.challenges || [],
       equipment_needed: parsed.equipment_needed || ["Basic waterproofing tools"],
-      recommendations: parsed.recommendations || ["Follow standard waterproofing practices"]
+      recommendations: parsed.recommendations || ["Follow standard waterproofing practices"],
+      ai_analysis_subtotal: parseFloat(parsed.ai_analysis_subtotal) || 0,
+      materials: materials
     };
   } catch (error) {
     console.error("Error in InvokeLLM:", error);
@@ -166,6 +219,30 @@ function getMockAnalysis(prompt, projectDescription) {
       "Add OpenAI API key to .env file for intelligent analysis",
       "Upload clear blueprints for accurate estimates",
       "Consider weather protection during application"
+    ],
+    ai_analysis_subtotal: area * 8.5 + complexity * 500, // Mock labor/equipment cost
+    materials: [
+      {
+        name: "Modified Bitumen Membrane",
+        quantity: area,
+        unit: "square feet",
+        unit_price: 1.5,
+        total_price: area * 1.5
+      },
+      {
+        name: "Primer",
+        quantity: Math.ceil(area / 200),
+        unit: "gallons",
+        unit_price: 45,
+        total_price: Math.ceil(area / 200) * 45
+      },
+      {
+        name: "Polyurethane Sealant",
+        quantity: Math.ceil(area / 100),
+        unit: "tubes",
+        unit_price: 15,
+        total_price: Math.ceil(area / 100) * 15
+      }
     ]
   };
 }
@@ -183,6 +260,16 @@ function getErrorFallback(prompt) {
     special_considerations: ["Standard waterproofing job - AI analysis unavailable"],
     challenges: ["Unable to perform detailed analysis"],
     equipment_needed: ["Basic waterproofing equipment"],
-    recommendations: ["Manual review recommended due to AI analysis failure"]
+    recommendations: ["Manual review recommended due to AI analysis failure"],
+    ai_analysis_subtotal: 12000, // Mock labor/equipment cost
+    materials: [
+      {
+        name: "Basic Waterproof Membrane",
+        quantity: 1000,
+        unit: "square feet",
+        unit_price: 1.2,
+        total_price: 1200
+      }
+    ]
   };
 }

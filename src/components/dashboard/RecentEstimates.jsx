@@ -66,22 +66,24 @@ export default function RecentEstimates({ estimates, isLoading }) {
                     <Building2 className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900">{estimate.project_name}</h3>
+                    <h3 className="font-semibold text-slate-900">
+                      {estimate.project_type || 'Waterproofing Project'}
+                    </h3>
                     <p className="text-sm text-slate-600">
-                      {estimate.client_name} • {format(new Date(estimate.created_date), 'MMM d, yyyy')}
+                      {estimate.building_type || 'Building'} • {format(new Date(estimate.created_at), 'MMM d, yyyy')}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <p className="font-bold text-slate-900">
-                      ${estimate.total_estimate?.toLocaleString() || '0'}
+                      ${(estimate.total || estimate.total_estimate || 0).toLocaleString()}
                     </p>
-                    <Badge className={statusColors[estimate.status]}>
-                      {statusLabels[estimate.status]}
+                    <Badge className={statusColors[estimate.status] || statusColors.draft}>
+                      {statusLabels[estimate.status] || statusLabels.draft}
                     </Badge>
                   </div>
-                  <Link to={createPageUrl(`EstimateDetail?id=${estimate.id}`)}>
+                  <Link to={`/app/estimate/${estimate.id}`}>
                     <Button variant="outline" size="sm">
                       <Eye className="w-4 h-4" />
                     </Button>

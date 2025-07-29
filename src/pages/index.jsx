@@ -5,6 +5,7 @@ import LoginPage from './LoginPage';
 import Dashboard from './Dashboard';
 import Estimates from './Estimates';
 import NewEstimate from './NewEstimate';
+import EstimateDetail from './EstimateDetail';
 import WaterproofingExpert from './WaterproofingExpert';
 import Layout from './Layout';
 
@@ -48,6 +49,7 @@ export default function Pages() {
             <Route index element={<Dashboard />} />
             <Route path="estimates" element={<Estimates />} />
             <Route path="new" element={<NewEstimate />} />
+            <Route path="estimate/:id" element={<EstimateDetail />} />
             <Route path="expert" element={<WaterproofingExpert />} />
           </Route>
           <Route path="*" element={<Navigate to="/" />} />

@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { format } from "date-fns";
 import { Search, Eye, Plus, Building2 } from "lucide-react";
+import { Estimate } from "@/utils/estimate";
 
 const statusColors = {
   draft: "bg-slate-100 text-slate-700",
@@ -28,6 +29,7 @@ export default function Estimates() {
   const [estimates, setEstimates] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadEstimates();
@@ -35,17 +37,23 @@ export default function Estimates() {
 
   const loadEstimates = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      // Placeholder for the removed loadEstimates function
+      // Load all estimates for the authenticated user
+      const data = await Estimate.list("created_at", false);
+      setEstimates(data);
     } catch (error) {
       console.error("Error loading estimates:", error);
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const filteredEstimates = estimates.filter(estimate =>
-    estimate.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    estimate.client_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    estimate.project_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    estimate.building_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    estimate.waterproofing_material?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -72,7 +80,7 @@ export default function Estimates() {
             <div className="relative">
               <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
               <Input
-                placeholder="Search estimates by project name or client..."
+                placeholder="Search estimates by project type, building, or material..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 text-lg"
@@ -80,6 +88,13 @@ export default function Estimates() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+            <strong>Error loading estimates:</strong> {error}
+          </div>
+        )}
 
         {/* Estimates List */}
         <Card className="shadow-lg">
@@ -120,22 +135,24 @@ export default function Estimates() {
                         <Building2 className="w-6 h-6 text-blue-600" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-slate-900 text-lg">{estimate.project_name}</h3>
+                        <h3 className="font-semibold text-slate-900 text-lg">
+                          {estimate.project_type?.replace(/_/g, ' ') || 'Waterproofing Project'}
+                        </h3>
                         <p className="text-slate-600">
-                          {estimate.client_name} • {format(new Date(estimate.created_date), 'MMM d, yyyy')}
+                          {estimate.building_type || 'Building'} • {format(new Date(estimate.created_at), 'MMM d, yyyy')}
                         </p>
                         <p className="text-sm text-slate-500">
-                          {estimate.project_type?.replace(/_/g, ' ')} • {estimate.analyzed_area?.toLocaleString()} sq ft
+                          {estimate.waterproofing_material?.replace(/_/g, ' ') || 'Standard Material'}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
                         <p className="font-bold text-slate-900 text-xl">
-                          ${estimate.total_estimate?.toLocaleString() || '0'}
+                          ${(estimate.total || estimate.total_estimate || 0).toLocaleString()}
                         </p>
-                        <Badge className={statusColors[estimate.status]}>
-                          {statusLabels[estimate.status]}
+                        <Badge className={statusColors[estimate.status] || statusColors.draft}>
+                          {statusLabels[estimate.status] || statusLabels.draft}
                         </Badge>
                       </div>
                       <Link to={createPageUrl(`EstimateDetail?id=${estimate.id}`)}>

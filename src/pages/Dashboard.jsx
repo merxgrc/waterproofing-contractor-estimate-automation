@@ -15,6 +15,7 @@ import QuickActions from "../components/dashboard/QuickActions";
 export default function Dashboard() {
   const [estimates, setEstimates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadEstimates();
@@ -22,16 +23,20 @@ export default function Dashboard() {
 
   const loadEstimates = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      const data = await Estimate.list("-created_date", 10);
+      // Fix the ordering parameter - use "created_at" not "created_date"
+      const data = await Estimate.list("created_at", false, 10);
       setEstimates(data);
     } catch (error) {
       console.error("Error loading estimates:", error);
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
-  const totalValue = estimates.reduce((sum, est) => sum + (est.total_estimate || 0), 0);
+  const totalValue = estimates.reduce((sum, est) => sum + (est.total || est.total_estimate || 0), 0);
   const pendingEstimates = estimates.filter(est => est.status === 'pending_review' || est.status === 'sent').length;
   const approvedEstimates = estimates.filter(est => est.status === 'approved').length;
 
@@ -53,6 +58,12 @@ export default function Dashboard() {
           </Link>
         </div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <strong>Error loading estimates:</strong> {error}
+          </div>
+        )}
         {/* Stats Grid */}
         <StatsGrid 
           totalEstimates={estimates.length}

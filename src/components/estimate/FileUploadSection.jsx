@@ -65,10 +65,11 @@ export default function FileUploadSection({ onFilesUploaded }) {
   };
 
   const handleContinue = async () => {
-    if (!blueprintFile) {
-      setError('Please upload a blueprint or site plan');
-      return;
-    }
+    // Make blueprint optional for testing
+    // if (!blueprintFile) {
+    //   setError('Please upload a blueprint or site plan');
+    //   return;
+    // }
 
     setUploading(true);
     setError(null);
@@ -81,9 +82,11 @@ export default function FileUploadSection({ onFilesUploaded }) {
 
       const uploadedFiles = {};
 
-      // Upload blueprint
-      const blueprintUrl = await uploadToSupabase('blueprints', blueprintFile);
-      uploadedFiles.blueprint = blueprintUrl;
+      // Upload blueprint if present
+      if (blueprintFile) {
+        const blueprintUrl = await uploadToSupabase('blueprints', blueprintFile);
+        uploadedFiles.blueprint = blueprintUrl;
+      }
 
       // Upload photos
       if (photoFiles.length > 0) {
@@ -95,6 +98,7 @@ export default function FileUploadSection({ onFilesUploaded }) {
         uploadedFiles.photos = photoUrls;
       }
 
+      console.log('Files uploaded successfully:', uploadedFiles);
       onFilesUploaded(uploadedFiles);
       
     } catch (error) {

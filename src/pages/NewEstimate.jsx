@@ -1,11 +1,13 @@
 // src/pages/NewEstimate.jsx
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { ArrowLeft, Upload, Brain, FileText, Calculator } from "lucide-react";
+import { ArrowLeft, Upload, Brain, FileText, Calculator, Plus, Trash2, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { InvokeLLM } from "@/utils/llm";
 import { Estimate } from "@/utils/estimate";
 
@@ -19,8 +21,11 @@ export default function NewEstimate() {
   const [currentStep, setCurrentStep] = useState(1);
   const [projectData, setProjectData] = useState({});
   const [uploadedFiles, setUploadedFiles] = useState({});
+  const [blueprintUrl, setBlueprintUrl] = useState(null); // Add specific state for blueprint URL
   const [analysisResults, setAnalysisResults] = useState(null);
   const [estimateData, setEstimateData] = useState(null);
+  const [manualEntries, setManualEntries] = useState([]); // Manual cost entries
+  const [materials, setMaterials] = useState([]); // AI suggested materials
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
 
@@ -30,12 +35,63 @@ export default function NewEstimate() {
   };
 
   const handleFilesUploaded = async (files) => {
+    console.log("📁 Files received in NewEstimate:", files);
+    console.log("📋 Blueprint URL:", files.blueprint);
+    console.log("📷 Photos:", files.photos);
+    
     setUploadedFiles(files);
+    
+    // Set blueprint URL in dedicated state
+    if (files.blueprint) {
+      setBlueprintUrl(files.blueprint);
+      console.log("✅ Blueprint URL saved to state:", files.blueprint);
+    }
+    
     setCurrentStep(3);
-    await analyzeProject();
+    
+    // Pass the files directly to avoid state timing issues
+    await analyzeProject(files, files.blueprint);
   };
 
-  const analyzeProject = async () => {
+  // Manual entry functions
+  const addManualEntry = () => {
+    setManualEntries([...manualEntries, { description: "", qty: 1, unit: "", cost: 0 }]);
+  };
+
+  const updateManualEntry = (index, field, value) => {
+    const updated = [...manualEntries];
+    updated[index] = { ...updated[index], [field]: value };
+    setManualEntries(updated);
+  };
+
+  const removeManualEntry = (index) => {
+    setManualEntries(manualEntries.filter((_, i) => i !== index));
+  };
+
+  // Calculate totals
+  const calculateTotals = () => {
+    const manualTotal = manualEntries.reduce((sum, entry) => {
+      const qty = parseFloat(entry.qty) || 0;
+      const cost = parseFloat(entry.cost) || 0;
+      return sum + (qty * cost);
+    }, 0);
+
+    const materialsTotal = materials.reduce((sum, material) => sum + (material.total_price || 0), 0);
+
+    // Use AI analysis subtotal from AI response, fallback to total_estimate for backward compatibility
+    const aiAnalysisSubtotal = analysisResults?.ai_analysis_subtotal || estimateData?.total_estimate || 0;
+    
+    const grandTotal = manualTotal + aiAnalysisSubtotal + materialsTotal;
+
+    return { 
+      manualTotal, 
+      materialsTotal, 
+      aiAnalysisSubtotal, 
+      grandTotal 
+    };
+  };
+
+  const analyzeProject = async (filesParam = null, blueprintUrlParam = null) => {
     setIsProcessing(true);
     setError(null);
 
@@ -45,15 +101,13 @@ export default function NewEstimate() {
         throw new Error("OpenAI API key not configured. Please add VITE_OPENAI_API_KEY to your .env file.");
       }
 
-<<<<<<< HEAD
-      // Prepare analysis prompt
-      const analysisPrompt = `
-        Analyze this waterproofing project for commercial estimation:
-=======
+      // Use parameters if provided, otherwise fall back to state
+      const currentFiles = filesParam || uploadedFiles;
+      const currentBlueprintUrl = blueprintUrlParam || blueprintUrl;
+
       // Prepare project description for AI analysis
       const projectDescription = `
         Waterproofing Project Analysis Request:
->>>>>>> ai-integration
         
         Project Details:
         - Type: ${projectData.project_type}
@@ -63,8 +117,8 @@ export default function NewEstimate() {
         - Urgency: ${projectData.urgency_level}
         - Location: ${projectData.zip_code}
         
-        ${uploadedFiles.blueprint ? 'Blueprint has been uploaded for analysis.' : ''}
-        ${uploadedFiles.photos?.length ? `${uploadedFiles.photos.length} site photos have been uploaded.` : ''}
+        ${currentBlueprintUrl ? 'Blueprint has been uploaded for analysis.' : ''}
+        ${currentFiles.photos?.length ? `${currentFiles.photos.length} site photos have been uploaded.` : ''}
         
         Please provide a detailed analysis including:
         1. Estimated square footage of waterproofing area
@@ -82,20 +136,40 @@ export default function NewEstimate() {
         - Quality control and testing needs
       `;
 
-      // Get the first uploaded image URL for analysis (if available)
-      const imageUrl = uploadedFiles.blueprint || (uploadedFiles.photos && uploadedFiles.photos[0]) || null;
+      // Get the image URL for analysis - prioritize blueprint, fallback to first photo
+      const imageUrl = currentBlueprintUrl || (currentFiles.photos && currentFiles.photos[0]) || null;
 
-<<<<<<< HEAD
-      const analysis = await InvokeLLM({ prompt: analysisPrompt });
-=======
+      // Debug logging
+      console.log("🧠 Starting AI analysis...", {
+        hasApiKey: !!import.meta.env.VITE_OPENAI_API_KEY,
+        hasImages: !!imageUrl,
+        imageUrl: imageUrl,
+        blueprintUrl: currentBlueprintUrl,
+        uploadedFiles: currentFiles,
+        projectType: projectData.project_type
+      });
+
       const analysis = await InvokeLLM({
         projectDescription: projectDescription,
         imageUrl: imageUrl
       });
->>>>>>> ai-integration
 
-      setAnalysisResults(analysis);
-      generateEstimate(analysis);
+      // Add debug info to analysis results
+      const enhancedAnalysis = {
+        ...analysis,
+        ai_mode: "real",
+        has_images: !!imageUrl,
+        image_url: imageUrl
+      };
+
+      console.log("✅ AI analysis complete:", enhancedAnalysis);
+
+      setAnalysisResults(enhancedAnalysis);
+      
+      // Set materials from AI response
+      setMaterials(enhancedAnalysis.materials || []);
+      
+      generateEstimate(enhancedAnalysis);
       
     } catch (error) {
       setError(`Error analyzing project: ${error.message}`);
@@ -191,18 +265,28 @@ export default function NewEstimate() {
         throw new Error("Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.");
       }
 
+      const { grandTotal, materialsTotal, aiAnalysisSubtotal } = calculateTotals();
+
       const estimateRecord = {
         ...projectData,
         ...uploadedFiles,
         ...estimateData,
         ...finalData,
         ai_analysis: analysisResults,
+        manual_entries: manualEntries,
+        materials: materials,
+        materials_subtotal: materialsTotal,
+        grand_total: grandTotal,
+        total: aiAnalysisSubtotal, // Keep for backward compatibility
         status: 'draft',
         created_at: new Date().toISOString()
       };
 
       const saved = await Estimate.create(estimateRecord);
-      navigate(createPageUrl(`EstimateDetail?id=${saved.id}`));
+      
+      // Navigate to dashboard and refresh
+      navigate("/app");
+      window.location.reload(); // Force refresh to show new estimate
     } catch (error) {
       setError(`Error saving estimate: ${error.message}`);
       console.error("Save error:", error);
@@ -285,12 +369,165 @@ export default function NewEstimate() {
         )}
 
         {currentStep === 4 && (
-          <EstimateBreakdown 
-            projectData={projectData}
-            estimateData={estimateData}
-            analysisResults={analysisResults}
-            onSave={saveEstimate}
-          />
+          <>
+            {/* Manual Entries Section */}
+            <Card className="bg-white shadow-lg mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Calculator className="w-5 h-5" />
+                    Manual Cost Entries
+                  </span>
+                  <Button onClick={addManualEntry} variant="outline" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Item
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {manualEntries.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">
+                    No manual entries yet. Click "Add Item" to add custom cost items.
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {manualEntries.map((entry, index) => (
+                      <div key={index} className="grid grid-cols-12 gap-3 items-center p-3 border rounded-lg">
+                        <div className="col-span-4">
+                          <Label htmlFor={`desc-${index}`} className="text-sm font-medium">Description</Label>
+                          <Input
+                            id={`desc-${index}`}
+                            placeholder="Enter description"
+                            value={entry.description}
+                            onChange={(e) => updateManualEntry(index, 'description', e.target.value)}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Label htmlFor={`qty-${index}`} className="text-sm font-medium">Quantity</Label>
+                          <Input
+                            id={`qty-${index}`}
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={entry.qty}
+                            onChange={(e) => updateManualEntry(index, 'qty', e.target.value)}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Label htmlFor={`unit-${index}`} className="text-sm font-medium">Unit</Label>
+                          <Input
+                            id={`unit-${index}`}
+                            placeholder="sq ft, hrs, ea"
+                            value={entry.unit}
+                            onChange={(e) => updateManualEntry(index, 'unit', e.target.value)}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Label htmlFor={`cost-${index}`} className="text-sm font-medium">Unit Cost</Label>
+                          <Input
+                            id={`cost-${index}`}
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={entry.cost}
+                            onChange={(e) => updateManualEntry(index, 'cost', e.target.value)}
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <Label className="text-sm font-medium">Total</Label>
+                          <div className="text-sm font-semibold pt-2">
+                            ${((parseFloat(entry.qty) || 0) * (parseFloat(entry.cost) || 0)).toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="col-span-1">
+                          <Button
+                            onClick={() => removeManualEntry(index)}
+                            variant="outline"
+                            size="sm"
+                            className="mt-6"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Live Total Display */}
+                    <div className="border-t pt-4">
+                      <div className="grid grid-cols-4 gap-4 text-right">
+                        <div>
+                          <div className="text-sm text-gray-600">Manual Entries Subtotal</div>
+                          <div className="text-lg font-semibold">${calculateTotals().manualTotal.toFixed(2)}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-600">Materials Subtotal</div>
+                          <div className="text-lg font-semibold">${calculateTotals().materialsTotal.toFixed(2)}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-600">AI Analysis Subtotal</div>
+                          <div className="text-lg font-semibold">${calculateTotals().aiAnalysisSubtotal.toFixed(2)}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-600">Grand Total</div>
+                          <div className="text-xl font-bold text-blue-600">${calculateTotals().grandTotal.toFixed(2)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* AI Suggested Materials */}
+            {materials.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Wrench className="w-5 h-5" />
+                    AI Suggested Materials
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-6 gap-4 text-sm font-medium text-gray-700 border-b pb-2">
+                      <div className="col-span-2">Material</div>
+                      <div>Quantity</div>
+                      <div>Unit</div>
+                      <div>Unit Price</div>
+                      <div>Total</div>
+                    </div>
+                    {materials.map((material, index) => (
+                      <div key={index} className="grid grid-cols-6 gap-4 text-sm">
+                        <div className="col-span-2 font-medium">{material.name}</div>
+                        <div>{material.quantity}</div>
+                        <div>{material.unit}</div>
+                        <div>${material.unit_price.toFixed(2)}</div>
+                        <div className="font-semibold">${material.total_price.toFixed(2)}</div>
+                      </div>
+                    ))}
+                    <div className="border-t pt-3">
+                      <div className="text-right">
+                        <div className="text-sm text-gray-600">Materials Subtotal</div>
+                        <div className="text-lg font-semibold">
+                          ${materials.reduce((sum, material) => sum + material.total_price, 0).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <EstimateBreakdown 
+              projectData={projectData}
+              estimateData={estimateData}
+              analysisResults={analysisResults}
+              manualEntries={manualEntries}
+              materials={materials}
+              totals={calculateTotals()}
+              onSave={saveEstimate}
+            />
+          </>
         )}
       </div>
     </div>
