@@ -44,13 +44,13 @@ export default function QuickActions() {
         </CardContent>
       </Card>
 
-      <Card className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg">
+      <Card className="bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg">
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
             <TrendingUp className="w-8 h-8" />
             <div>
-              <h3 className="font-bold text-lg">Pro Tip</h3>
-              <p className="text-sm opacity-90">Upload clear blueprint PDFs and site photos for more accurate AI estimates</p>
+              <h3 className="font-bold text-lg">🧠 AI-Powered Estimates</h3>
+              <p className="text-sm opacity-90">Upload blueprints and photos for intelligent project analysis and accurate cost calculations</p>
             </div>
           </div>
         </CardContent>

@@ -28,14 +28,20 @@ export const Estimate = {
     return data;
   },
 
-  async list() {
-    const { data, error } = await supabase
+  async list(orderBy = "created_at", ascending = false, limit = null) {
+    let query = supabase
       .from("estimates")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order(orderBy, { ascending });
+    
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    const { data, error } = await query;
     
     if (error) throw error;
-    return data;
+    return data || [];
   },
 
   async update(id, updates) {
@@ -49,4 +55,4 @@ export const Estimate = {
     if (error) throw error;
     return data;
   }
-}; 
+};

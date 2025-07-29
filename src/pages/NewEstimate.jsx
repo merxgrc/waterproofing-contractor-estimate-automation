@@ -45,9 +45,15 @@ export default function NewEstimate() {
         throw new Error("OpenAI API key not configured. Please add VITE_OPENAI_API_KEY to your .env file.");
       }
 
+<<<<<<< HEAD
       // Prepare analysis prompt
       const analysisPrompt = `
         Analyze this waterproofing project for commercial estimation:
+=======
+      // Prepare project description for AI analysis
+      const projectDescription = `
+        Waterproofing Project Analysis Request:
+>>>>>>> ai-integration
         
         Project Details:
         - Type: ${projectData.project_type}
@@ -66,7 +72,7 @@ export default function NewEstimate() {
         3. Labor hours estimation
         4. Special considerations or challenges
         5. Equipment requirements
-        6. Material quantity estimates
+        6. Project recommendations
         
         Consider factors like:
         - Surface preparation requirements
@@ -76,11 +82,17 @@ export default function NewEstimate() {
         - Quality control and testing needs
       `;
 
-      const fileUrls = [];
-      if (uploadedFiles.blueprint) fileUrls.push(uploadedFiles.blueprint);
-      if (uploadedFiles.photos) fileUrls.push(...uploadedFiles.photos);
+      // Get the first uploaded image URL for analysis (if available)
+      const imageUrl = uploadedFiles.blueprint || (uploadedFiles.photos && uploadedFiles.photos[0]) || null;
 
+<<<<<<< HEAD
       const analysis = await InvokeLLM({ prompt: analysisPrompt });
+=======
+      const analysis = await InvokeLLM({
+        projectDescription: projectDescription,
+        imageUrl: imageUrl
+      });
+>>>>>>> ai-integration
 
       setAnalysisResults(analysis);
       generateEstimate(analysis);
