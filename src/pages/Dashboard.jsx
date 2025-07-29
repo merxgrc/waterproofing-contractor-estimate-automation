@@ -6,6 +6,7 @@ import { createPageUrl } from "@/utils";
 import { Plus, Calculator, FileText, DollarSign, Clock, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { Estimate } from "@/utils/estimate";
 
 import StatsGrid from "../components/dashboard/StatsGrid";
 import RecentEstimates from "../components/dashboard/RecentEstimates";

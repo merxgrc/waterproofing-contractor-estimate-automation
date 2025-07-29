@@ -5,6 +5,8 @@ import { ArrowLeft, Upload, Brain, FileText, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InvokeLLM } from "@/utils/llm";
+import { Estimate } from "@/utils/estimate";
 
 import ProjectInfoForm from "../components/estimate/ProjectInfoForm";
 import FileUploadSection from "../components/estimate/FileUploadSection";
@@ -37,9 +39,14 @@ export default function NewEstimate() {
     setError(null);
 
     try {
-      // Prepare analysis prompt
-      const analysisPrompt = `
-        Analyze this waterproofing project for commercial estimation:
+      // Check if OpenAI API key is configured
+      if (!import.meta.env.VITE_OPENAI_API_KEY) {
+        throw new Error("OpenAI API key not configured. Please add VITE_OPENAI_API_KEY to your .env file.");
+      }
+
+      // Prepare project description for AI analysis
+      const projectDescription = `
+        Waterproofing Project Analysis Request:
         
         Project Details:
         - Type: ${projectData.project_type}
@@ -58,7 +65,7 @@ export default function NewEstimate() {
         3. Labor hours estimation
         4. Special considerations or challenges
         5. Equipment requirements
-        6. Material quantity estimates
+        6. Project recommendations
         
         Consider factors like:
         - Surface preparation requirements
@@ -68,33 +75,19 @@ export default function NewEstimate() {
         - Quality control and testing needs
       `;
 
-      const fileUrls = [];
-      if (uploadedFiles.blueprint) fileUrls.push(uploadedFiles.blueprint);
-      if (uploadedFiles.photos) fileUrls.push(...uploadedFiles.photos);
+      // Get the first uploaded image URL for analysis (if available)
+      const imageUrl = uploadedFiles.blueprint || (uploadedFiles.photos && uploadedFiles.photos[0]) || null;
 
       const analysis = await InvokeLLM({
-        prompt: analysisPrompt,
-        file_urls: fileUrls.length > 0 ? fileUrls : null,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            estimated_area: { type: "number" },
-            complexity_score: { type: "number" },
-            labor_hours: { type: "number" },
-            special_considerations: { type: "array", items: { type: "string" } },
-            equipment_needed: { type: "array", items: { type: "string" } },
-            material_quantities: { type: "object" },
-            challenges: { type: "array", items: { type: "string" } },
-            recommendations: { type: "array", items: { type: "string" } }
-          }
-        }
+        projectDescription: projectDescription,
+        imageUrl: imageUrl
       });
 
       setAnalysisResults(analysis);
       generateEstimate(analysis);
       
     } catch (error) {
-      setError("Error analyzing project. Please try again.");
+      setError(`Error analyzing project: ${error.message}`);
       console.error("Analysis error:", error);
     }
 
@@ -194,7 +187,8 @@ export default function NewEstimate() {
       const saved = await Estimate.create(estimateRecord);
       navigate(createPageUrl(`EstimateDetail?id=${saved.id}`));
     } catch (error) {
-      setError("Error saving estimate. Please try again.");
+      setError(`Error saving estimate: ${error.message}`);
+      console.error("Save error:", error);
     }
   };
 
