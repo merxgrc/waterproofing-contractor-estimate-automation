@@ -26,17 +26,21 @@ export default function ChatMessage({ message, isLoading }) {
             <span>{text}</span>
           </div>
         ) : (
-          <ReactMarkdown
-            className="prose prose-sm max-w-none"
-            components={{
-              p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
-              ul: ({node, ...props}) => <ul className="list-disc list-inside space-y-1" {...props} />,
-              ol: ({node, ...props}) => <ol className="list-decimal list-inside space-y-1" {...props} />,
-              strong: ({node, ...props}) => <strong className="font-bold" {...props} />,
-            }}
-          >
-            {text}
-          </ReactMarkdown>
+          <div className="prose prose-sm max-w-none">
+            <ReactMarkdown
+              components={{
+                p: ({...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                ul: ({...props}) => <ul className="list-disc list-inside space-y-1" {...props} />,
+                ol: ({...props}) => <ol className="list-decimal list-inside space-y-1" {...props} />,
+                strong: ({...props}) => <strong className="font-bold" {...props} />,
+                h1: ({...props}) => <h1 className="text-lg font-bold mb-2" {...props} />,
+                h2: ({...props}) => <h2 className="text-base font-bold mb-2" {...props} />,
+                h3: ({...props}) => <h3 className="text-sm font-bold mb-1" {...props} />,
+              }}
+            >
+              {text}
+            </ReactMarkdown>
+          </div>
         )}
       </div>
 

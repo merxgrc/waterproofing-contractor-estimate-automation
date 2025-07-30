@@ -185,7 +185,101 @@ export async function InvokeLLM({ prompt, projectDescription, imageUrl }) {
 // Mock analysis for demo/development when API is not available
 function getMockAnalysis(prompt, projectDescription) {
   if (prompt) {
-    return "I'm a waterproofing expert assistant. For a full AI experience, please configure your OpenAI API key. I can help with general waterproofing questions, material selection, and best practices.";
+    // Provide helpful waterproofing responses based on keywords in the prompt
+    const lowerPrompt = prompt.toLowerCase();
+    
+    if (lowerPrompt.includes('elevator pit')) {
+      return `For elevator pit waterproofing, I recommend:
+
+**Primary System:**
+- Hot-applied rubberized asphalt membrane or crystalline admixture concrete
+- Bentonite waterproofing for hydrostatic pressure situations
+
+**Key Considerations:**
+- Hydrostatic pressure is critical in elevator pits
+- Use positive-side waterproofing when possible
+- Ensure proper drainage and sump pump systems
+- Apply primer to clean, dry concrete surfaces
+- Pay special attention to wall-to-floor joints
+
+**Materials to Consider:**
+- Crystalline waterproofing (penetrates concrete)
+- Modified bitumen sheet membrane
+- Liquid-applied membrane with reinforcement
+
+Note: This is general guidance. For AI-powered analysis with your specific project details, configure your OpenAI API key.`;
+    }
+    
+    if (lowerPrompt.includes('membrane') || lowerPrompt.includes('sheet') || lowerPrompt.includes('liquid')) {
+      return `**Sheet vs Liquid Membrane Comparison:**
+
+**Sheet Membrane Pros:**
+- Consistent thickness
+- Good for large, simple areas
+- Excellent puncture resistance
+- Long-term durability
+
+**Sheet Membrane Cons:**
+- Seam vulnerabilities
+- Difficult around penetrations
+- Requires skilled installation
+
+**Liquid Membrane Pros:**
+- Seamless application
+- Great for complex geometries
+- Easy detail work
+- Self-healing properties
+
+**Liquid Membrane Cons:**
+- Weather-dependent application
+- Thickness variations possible
+- Longer cure times
+
+For AI-powered project-specific recommendations, add your OpenAI API key to get detailed analysis.`;
+    }
+    
+    if (lowerPrompt.includes('surface prep') || lowerPrompt.includes('preparation')) {
+      return `**Surface Preparation Guidelines:**
+
+**Concrete Surfaces:**
+1. Clean all dirt, oil, loose material
+2. Repair cracks and voids
+3. Achieve proper surface profile (CSP 1-3)
+4. Ensure moisture content <4%
+5. Apply primer if required
+
+**Critical Steps:**
+- Shot blasting or grinding for contaminated surfaces
+- Fill honeycombing and bug holes
+- Round off sharp edges
+- Test for surface moisture
+- Check for previous coatings
+
+**Quality Control:**
+- Pull-off adhesion tests
+- Moisture meter readings
+- Visual inspection checklist
+
+Configure OpenAI API key for detailed, project-specific surface prep specifications.`;
+    }
+    
+    // Generic helpful response for other questions
+    return `I'm a waterproofing expert assistant. While I can provide general guidance, for detailed AI-powered analysis specific to your project, please configure your OpenAI API key.
+
+**Common Waterproofing Topics I Can Help With:**
+- Material selection (membranes, coatings, sealants)
+- Surface preparation requirements
+- Application techniques and best practices
+- Problem diagnosis and troubleshooting
+- Safety protocols and standards
+
+**Popular Questions:**
+- "What materials for elevator pit waterproofing?"
+- "Sheet membrane vs liquid membrane comparison"
+- "Surface preparation for hot-applied systems"
+- "Leak diagnosis techniques"
+
+Ask me about any waterproofing topic!`;
   }
 
   // Extract some basic info from project description for more realistic mock data
