@@ -1,4 +1,4 @@
--- Fix Row Level Security (RLS) policies for estimates table
+s-- Fix Row Level Security (RLS) policies for estimates table
 -- Run this in your Supabase SQL editor
 
 -- Disable RLS temporarily to allow inserts (for development)

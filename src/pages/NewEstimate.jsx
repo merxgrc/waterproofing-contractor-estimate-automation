@@ -92,92 +92,86 @@ export default function NewEstimate() {
   };
 
   const analyzeProject = async (filesParam = null, blueprintUrlParam = null) => {
-    setIsProcessing(true);
-    setError(null);
+  setIsProcessing(true);
+  setError(null);
 
-    try {
-      // Check if OpenAI API key is configured
-      if (!import.meta.env.VITE_OPENAI_API_KEY) {
-        throw new Error("OpenAI API key not configured. Please add VITE_OPENAI_API_KEY to your .env file.");
-      }
+  try {
+    // Use parameters if provided, otherwise fall back to state
+    const currentFiles = filesParam || uploadedFiles;
+    const currentBlueprintUrl = blueprintUrlParam || blueprintUrl;
 
-      // Use parameters if provided, otherwise fall back to state
-      const currentFiles = filesParam || uploadedFiles;
-      const currentBlueprintUrl = blueprintUrlParam || blueprintUrl;
+    // Prepare project description for AI analysis
+    const projectDescription = `
+      Waterproofing Project Analysis Request:
 
-      // Prepare project description for AI analysis
-      const projectDescription = `
-        Waterproofing Project Analysis Request:
-        
-        Project Details:
-        - Type: ${projectData.project_type}
-        - Building: ${projectData.building_type}
-        - Material: ${projectData.waterproofing_material}
-        - Access: ${projectData.access_conditions}
-        - Urgency: ${projectData.urgency_level}
-        - Location: ${projectData.zip_code}
-        
-        ${currentBlueprintUrl ? 'Blueprint has been uploaded for analysis.' : ''}
-        ${currentFiles.photos?.length ? `${currentFiles.photos.length} site photos have been uploaded.` : ''}
-        
-        Please provide a detailed analysis including:
-        1. Estimated square footage of waterproofing area
-        2. Complexity assessment (1-10 scale)
-        3. Labor hours estimation
-        4. Special considerations or challenges
-        5. Equipment requirements
-        6. Project recommendations
-        
-        Consider factors like:
-        - Surface preparation requirements
-        - Detail work complexity (corners, penetrations, joints)
-        - Access challenges and staging needs
-        - Weather protection requirements
-        - Quality control and testing needs
-      `;
+      Project Details:
+      - Type: ${projectData.project_type}
+      - Building: ${projectData.building_type}
+      - Material: ${projectData.waterproofing_material}
+      - Access: ${projectData.access_conditions}
+      - Urgency: ${projectData.urgency_level}
+      - Location: ${projectData.zip_code}
 
-      // Get the image URL for analysis - prioritize blueprint, fallback to first photo
-      const imageUrl = currentBlueprintUrl || (currentFiles.photos && currentFiles.photos[0]) || null;
+      ${currentBlueprintUrl ? 'Blueprint has been uploaded for analysis.' : ''}
+      ${currentFiles.photos?.length ? `${currentFiles.photos.length} site photos have been uploaded.` : ''}
+    `;
 
-      // Debug logging
-      console.log("🧠 Starting AI analysis...", {
-        hasApiKey: !!import.meta.env.VITE_OPENAI_API_KEY,
-        hasImages: !!imageUrl,
-        imageUrl: imageUrl,
-        blueprintUrl: currentBlueprintUrl,
-        uploadedFiles: currentFiles,
-        projectType: projectData.project_type
-      });
+    // Get the image URL for analysis - prioritize blueprint, fallback to first photo
+    const imageUrl =
+      currentBlueprintUrl ||
+      (currentFiles.photos && currentFiles.photos[0]) ||
+      null;
 
-      const analysis = await InvokeLLM({
-        projectDescription: projectDescription,
-        imageUrl: imageUrl
-      });
+    // Debug logging
+    console.log("🧠 Starting AI analysis...", {
+      hasImages: !!imageUrl,
+      imageUrl,
+      blueprintUrl: currentBlueprintUrl,
+      uploadedFiles: currentFiles,
+      projectType: projectData.project_type,
+    });
 
-      // Add debug info to analysis results
-      const enhancedAnalysis = {
-        ...analysis,
-        ai_mode: "real",
-        has_images: !!imageUrl,
-        image_url: imageUrl
-      };
+    // 🔥 Call your backend API route instead of InvokeLLM
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        projectDescription,
+        imageUrl,
+        projectType: projectData.project_type,
+        files: currentFiles,
+      }),
+    });
 
-      console.log("✅ AI analysis complete:", enhancedAnalysis);
-
-      setAnalysisResults(enhancedAnalysis);
-      
-      // Set materials from AI response
-      setMaterials(enhancedAnalysis.materials || []);
-      
-      generateEstimate(enhancedAnalysis);
-      
-    } catch (error) {
-      setError(`Error analyzing project: ${error.message}`);
-      console.error("Analysis error:", error);
+    if (!res.ok) {
+      throw new Error(`AI analysis failed: ${res.statusText}`);
     }
 
-    setIsProcessing(false);
-  };
+    const analysis = await res.json();
+
+    // Add debug info to analysis results
+    const enhancedAnalysis = {
+      ...analysis,
+      ai_mode: "real",
+      has_images: !!imageUrl,
+      image_url: imageUrl,
+    };
+
+    console.log("✅ AI analysis complete:", enhancedAnalysis);
+
+    setAnalysisResults(enhancedAnalysis);
+
+    // Set materials from AI response
+    setMaterials(enhancedAnalysis.materials || []);
+
+    generateEstimate(enhancedAnalysis);
+  } catch (error) {
+    setError(`Error analyzing project: ${error.message}`);
+    console.error("Analysis error:", error);
+  }
+
+  setIsProcessing(false);
+};
 
   const generateEstimate = (analysis) => {
     // Material cost calculations
