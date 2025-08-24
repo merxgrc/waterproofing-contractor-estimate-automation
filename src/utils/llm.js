@@ -4,50 +4,39 @@
 // 2. Use server-side API routes (Next.js API routes, Express endpoints, etc.)
 // 3. Never expose API keys in client-side code
 
-// Check if we have an API key (remove overly restrictive development check)
+// Check if we're in a development environment and have an API key
+const isDevelopment = import.meta.env.MODE === 'development';
 const hasApiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
 let client = null;
 
-if (hasApiKey) {
+if (isDevelopment && hasApiKey) {
   try {
     const OpenAI = (await import("openai")).default;
     client = new OpenAI({
       apiKey: import.meta.env.VITE_OPENAI_API_KEY,
       dangerouslyAllowBrowser: true, // Only for development
     });
-    console.log("✅ OpenAI client initialized successfully");
   } catch (error) {
-    console.warn("❌ OpenAI client initialization failed:", error);
+    console.warn("OpenAI client initialization failed:", error);
   }
-} else {
-  console.warn("⚠️ No OpenAI API key found in environment variables");
 }
 
 export async function InvokeLLM({ prompt, projectDescription, imageUrl }) {
-  // Enhanced debug logging
+  // Debug logging
   console.log("🔧 LLM Debug:", {
     hasClient: !!client,
     hasPrompt: !!prompt,
     hasProjectDescription: !!projectDescription,
     hasImageUrl: !!imageUrl,
-    imageUrl: imageUrl,
-    apiKeyExists: !!import.meta.env.VITE_OPENAI_API_KEY,
-    apiKeyLength: import.meta.env.VITE_OPENAI_API_KEY?.length || 0,
-    mode: import.meta.env.MODE
+    imageUrl: imageUrl
   });
 
   // If no client available, use mock data for demo purposes
   if (!client) {
-    console.warn("⚠️ OpenAI client not available. Using mock analysis data.");
-    console.log("Environment check:", {
-      VITE_OPENAI_API_KEY: import.meta.env.VITE_OPENAI_API_KEY ? "Present" : "Missing",
-      MODE: import.meta.env.MODE
-    });
+    console.warn("OpenAI client not available. Using mock analysis data.");
     return getMockAnalysis(prompt, projectDescription);
   }
-
-  console.log("🚀 Making OpenAI API call...");
 
   try {
     // Handle both old prompt-based calls and new structured calls
